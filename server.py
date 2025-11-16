@@ -68,10 +68,11 @@ def health():
     return jsonify({'status': 'ok'})
 
 if __name__ == '__main__':
-    # For local development
+    # Get port from environment variable (for deployment) or use 5000 (for local)
+    port = int(os.environ.get('PORT', 5000))
     print("🚀 Starting SafeNaija Classification Server...")
-    print("📡 Server will run on http://localhost:5000")
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    print(f"📡 Server will run on port {port}")
+    app.run(debug=False, host='0.0.0.0', port=port)
 else:
     # For production (Render, etc.)
     print("🚀 Running in production mode")
