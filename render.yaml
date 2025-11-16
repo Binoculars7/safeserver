@@ -1,9 +1,10 @@
 services:
   - type: web
-    name: safenaija-backend
+    name: safeserver
     env: python
+    plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: python server.py
+    startCommand: gunicorn server:app --bind 0.0.0.0:$PORT
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.9.0
+      - key: OPENAI_API_KEY
+        value: your-openai-api-key-here
