@@ -4,7 +4,7 @@ import os
 
 # Try to import openai, but don't crash if it fails
 try:
-    import openai
+    from openai import OpenAI
     OPENAI_AVAILABLE = True
 except ImportError:
     OPENAI_AVAILABLE = False
@@ -13,11 +13,14 @@ except ImportError:
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
-# Set your OpenAI API key from environment variable or hardcoded
+# Set your OpenAI API key from environment variable
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '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')
 
-if OPENAI_AVAILABLE:
-    openai.api_key = OPENAI_API_KEY
+# Initialize OpenAI client if available
+if OPENAI_AVAILABLE and OPENAI_API_KEY:
+    client = OpenAI(api_key=OPENAI_API_KEY)
+else:
+    client = None
 
 @app.route('/', methods=['GET'])
 def home():
@@ -25,22 +28,25 @@ def home():
         'status': 'running',
         'message': 'SafeNaija Classification API',
         'openai_available': OPENAI_AVAILABLE,
-        'endpoints': {
-            'classify': '/classify [POST]',
-            'health': '/health [GET]'
-        }
+        'openai_configured': bool(OPENAI_API_KEY)
     })
 
 @app.route('/classify', methods=['POST', 'OPTIONS'])
 def classify():
+    if request.method == 'OPTIONS':
+        return '', 200
+        
     try:
-        if not OPENAI_AVAILABLE:
+        if not OPENAI_AVAILABLE or not client:
             return jsonify({
-                'error': 'OpenAI library not installed',
+                'error': 'OpenAI not configured properly',
                 'success': False
             }), 500
         
         data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No JSON data provided', 'success': False}), 400
+            
         text = data.get('text', '')
         
         if not text:
@@ -57,8 +63,8 @@ Emergency: "{text}"
 
 Category (one word only):"""
         
-        # Call OpenAI API
-        response = openai.ChatCompletion.create(
+        # Call OpenAI API with new syntax
+        response = client.chat.completions.create(
             model='gpt-3.5-turbo',
             messages=[
                 {
@@ -95,7 +101,11 @@ Category (one word only):"""
 
 @app.route('/health', methods=['GET'])
 def health():
-    return jsonify({'status': 'ok', 'openai_available': OPENAI_AVAILABLE})
+    return jsonify({
+        'status': 'ok', 
+        'openai_available': OPENAI_AVAILABLE,
+        'openai_configured': bool(OPENAI_API_KEY)
+    })
 
 if __name__ == '__main__':
     # Get port from environment variable (for deployment) or use 5000 (for local)
@@ -103,4 +113,5 @@ if __name__ == '__main__':
     print("🚀 Starting SafeNaija Classification Server...")
     print(f"📡 Server will run on port {port}")
     print(f"🔑 OpenAI Available: {OPENAI_AVAILABLE}")
+    print(f"🔑 OpenAI Configured: {bool(OPENAI_API_KEY)}")
     app.run(debug=False, host='0.0.0.0', port=port)
