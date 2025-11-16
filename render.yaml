@@ -1,3 +1,5 @@
+# render.yaml
+
 services:
   - type: web
     name: safeserver
@@ -7,4 +9,10 @@ services:
     startCommand: gunicorn server:app --bind 0.0.0.0:$PORT
     envVars:
       - key: OPENAI_API_KEY
-        value: your-openai-api-key-here
+        fromService:
+          type: "env_var_group"
+          name: "openai-api" # or some name for your secret group
+        # Or, if setting directly in the service's environment tab:
+        # Just having the key here is fine, but don't specify 'value'
+      - key: PYTHON_VERSION
+        value: 3.11.5 # It's good practice to specify a Python version
